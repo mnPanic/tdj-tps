@@ -17,11 +17,25 @@ def cake_to_str(cake: Cake) -> str:
 cake_parts = ["1", "2", "3", "4"]
 
 # Identidades
+# f1: Dict[str, float] = {
+#     "1": 1,
+#     "2": 2,
+#     "3": 3,
+#     "4": 4,
+# }
+
+# f2: Dict[str, float] = {
+#     "1": 1,
+#     "2": 2,
+#     "3": 3,
+#     "4": 4,
+# }
+
 f1: Dict[str, float] = {
-    "1": 1,
-    "2": 2,
-    "3": 3,
-    "4": 4,
+    "1": 4,
+    "2": 3,
+    "3": 2,
+    "4": 1,
 }
 
 f2: Dict[str, float] = {
@@ -110,14 +124,56 @@ def generate_cake(size: int) -> Cake:
     # https://docs.python.org/3/library/random.html#random.choices
     return random.choices(population=cake_parts, k=size)
 
-
 def player1_cut(cake: Cake) -> int:
-    """
-    Jugador 1. Devuelve el índice en el cual cortar la torta, no inclusivo.
-    Parte en [0, cut) y [cut, T].
-    """
+    """Jugador 1. Devuelve el índice en el cual cortar la torta"""
+    #return player1_cut_half(cake)
+    return player1_cut_max(cake)
+
+def player1_cut_half(cake: Cake) -> int:
+    """Parte en [0, cut) y [cut, T]."""
     # Dummy por ahora
     return int(len(cake) / 2)
+
+def player1_cut_max(cake: Cake) -> int:
+    """
+    Prueba todos los cortes posibles y se queda con el que le de un valor máximo
+    """
+    # listas de (corte, valor corte)
+    cuts: List[Tuple[int, float]] = []
+
+    for cut in range(len(cake)):
+        value = cut_value(cake, cut)
+        cuts.append((cut, value))
+
+    return max(cuts, key=lambda t: t[1])[0]
+
+def cut_value(cake: Cake, cut_index: int) -> float:
+    """
+    Dada una torta y un corte, devuelve el valor esperado considerando que el
+    jugador 2 va a elegir la mitad que más le conviene.
+
+    Ejemplo, dada
+
+        cake = 1234, cuts:
+        1       1: 0.3 2: 0.6
+        234     1: 0.7 2: 0.4
+
+    Asume que 2 va a elegir mitad 1, porque paga 0.6 (max) entonces a vos te
+    queda la mitad 234, con paga 0.7. Entonces el valor del corte es 0.7
+    """
+
+    first_half, second_half = cake[:cut_index], cake[cut_index:]
+    p1_first_half_profit = utility(f1, cake, first_half)
+    p2_first_half_profit = utility(f2, cake, first_half)
+
+    p1_second_half_profit = utility(f1, cake, second_half)
+    p2_second_half_profit = utility(f2, cake, second_half)
+
+    if p2_first_half_profit > p2_second_half_profit:
+        # Elige el primero, nos toca el segundo
+        return p1_second_half_profit
+
+    return p1_first_half_profit
 
 CHOOSE_FIRST = False
 CHOOSE_SECOND = True

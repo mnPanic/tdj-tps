@@ -4,6 +4,13 @@ Teoría de juegos, TP2 - Cut and choose iterado con información perfecta.
 
 [Link al campus](https://campus.exactas.uba.ar/mod/assign/view.php?id=319058)
 
+## TODOs
+
+- Informe
+- Gráficos
+- Probar diferentes opciones en tablas de gustos
+- Debuggear y ver que ande bien (printear info de debug para cada corte)
+
 ## Enunciado
 
 Se trata de escribir un programa que simule el proceso Cut & Choose iterado con información completa.
