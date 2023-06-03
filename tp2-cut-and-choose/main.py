@@ -7,45 +7,108 @@ Argumentos:
 import sys
 import random
 
+from dataclasses import dataclass
+
 from typing import List, Tuple, Dict
 
-Cake = List[str]
+Cake = str
+FlavorValuation = Dict[str, float]
 
-def cake_to_str(cake: Cake) -> str:
-    return ''.join(cake)
+cake_flavors = ["1", "2", "3", "4"]
 
-cake_parts = ["1", "2", "3", "4"]
+CHOOSE_FIRST = False
+CHOOSE_SECOND = True
 
-# Identidades
-# f1: Dict[str, float] = {
-#     "1": 1,
-#     "2": 2,
-#     "3": 3,
-#     "4": 4,
-# }
+@dataclass
+class PlayersValuation():
+    name: str
+    f1: FlavorValuation
+    f2: FlavorValuation
 
-# f2: Dict[str, float] = {
-#     "1": 1,
-#     "2": 2,
-#     "3": 3,
-#     "4": 4,
-# }
+def flavor_valuation_identity() -> PlayersValuation:
+    identity_valuation = {
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+    }
 
-f1: Dict[str, float] = {
-    "1": 4,
-    "2": 3,
-    "3": 2,
-    "4": 1,
-}
+    return PlayersValuation(
+        name="identity",
+        f1=identity_valuation,
+        f2=identity_valuation,
+    )
 
-f2: Dict[str, float] = {
-    "1": 1,
-    "2": 2,
-    "3": 3,
-    "4": 4,
-}
+def flavor_valuation_inverse() -> PlayersValuation:
+    return PlayersValuation(
+        name="inverse",
+        f1 = {
+            "1": 4,
+            "2": 3,
+            "3": 2,
+            "4": 1,
+        },
+        f2 ={
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+        }
+    )
 
-def utility(f: Dict[str, float], cake: Cake, cake_part: Cake) -> float:
+def flavor_valuation_inverse_eq() -> PlayersValuation:
+    return PlayersValuation(
+        name="inverse eq",
+        f1 = {
+            "1": 1,
+            "2": 1,
+            "3": 0,
+            "4": 0,
+        },
+        f2 ={
+            "1": 0,
+            "2": 0,
+            "3": 1,
+            "4": 1,
+        }
+    )
+
+def flavor_valuation_id_eq() -> PlayersValuation:
+    return PlayersValuation(
+        name="id_eq",
+        f1 = {
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+        },
+        f2 ={
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+        }
+    )
+
+def flavor_valuation_eq() -> PlayersValuation:
+    return PlayersValuation(
+        name="eq",
+        f1 = {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+        },
+        f2 ={
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+        }
+    )
+
+
+def utility(f: FlavorValuation, cake: Cake, cake_part: Cake) -> float:
     """Función de valoración de un jugador, normalizada a 1"""
     max_value = 0
     for part in cake:
@@ -61,128 +124,163 @@ def main(args: List[str]):
     # T, N
     cake_size, num_iters = parse_args(args)
 
-    player1_total = 0
-    player2_total = 0
-    for i in range(num_iters):
-        print(f"(#{i})")
-        u1, u2 = simulate(cake_size)
-        player1_total += u1
-        player2_total += u2
-        print()
-    
-    print(f"totals: 1: {player1_total:.3f}, 2: {player2_total:.3f}")
+    vals = flavor_valuation_inverse()
 
+    game = CutAndChoose(debug=False, vals=vals)
 
-def simulate(cake_size: int):
-    cake = generate_cake(cake_size)
-    cut_index = player1_cut(cake)
-
-    first_half, second_half = cake[:cut_index], cake[cut_index:]
-    choice = player2_choose(cake, first_half, second_half)
-    if choice:
-        player1_half = first_half
-        player2_half = second_half
-    else:
-        player1_half = second_half
-        player2_half = first_half
-
-    player1_profit = utility(f1, cake, player1_half)
-    player2_profit = utility(f2, cake, player2_half)
-
-    # Output de la iter
-    output = f"cake: {cake_to_str(cake)}, cut index: {cut_index}\n"
-
-    # Debug printeamos valores de mitades
-    p1fh = utility(f1, cake, first_half)
-    p1sh = utility(f1, cake, second_half)
-
-    p2fh = utility(f2, cake, first_half)
-    p2sh = utility(f2, cake, second_half)
-    output += f"{cake_to_str(first_half)} -> 1: {p1fh:.3f}, 2: {p2fh:.3f}\n"
-    output += f"{cake_to_str(second_half)} -> 1: {p1sh:.3f}, 2: {p2sh:.3f}\n"
-
-    # Cortes y profits
-    output += f" cut: {cake_to_str(player1_half)} (1) {cake_to_str(player2_half)} (2)\n"
-    output += f"profits: 1: {player1_profit:.3f}, 2: {player2_profit:.3f}"
-    print(output)
-
-    return player1_profit, player2_profit
+    game.play(cake_size, num_iters)
 
 def parse_args(args: List[str]) -> Tuple[int, int]:
     if len(args) != 3:
         print("usage\n\t main.py <T> <N>")
+        exit(1)
     
     return int(args[1]), int(args[2])
+
+
+class CutAndChoose():
+    def __init__(self, debug: bool, vals: PlayersValuation) -> None:
+        self.debug = debug
+        self.vals = vals
     
-def generate_cake(size: int) -> Cake:
-    """Genera una torta aleatoria de tamaño size"""
-    # TODO: Las cantidades deberían ser aleatorias, tal vez no uniformes?
-    # Generar weights cuya suma sea 1, aleatorios.
+    def play(self, cake_size: int, num_iters: int):
+        print(f"Running Cut and choose with #{num_iters} iterations, cakes of size {cake_size} valuations '{self.vals.name}'")
+        
+        cuts = {}
+        player1_total = 0
+        player2_total = 0
+        for i in range(num_iters):
+            print(f"(#{i})")
+            u1, u2, cut = self.simulate(cake_size)
+            player1_total += u1
+            player2_total += u2
+            print()
+    
+        print(f"totals: 1: {player1_total:.3f}, 2: {player2_total:.3f}")
+        
+    def simulate(self, cake_size: int) -> Tuple[int, int, int]: # u1, u2, cut
+        cake = self.generate_cake(cake_size)
+        self.debug_print(f"cake: {cake}")
 
-    # Genera una aleatoria lista de tamaño k con una distribución uniforme de 
-    # los elementos de population
-    # https://docs.python.org/3/library/random.html#random.choices
-    return random.choices(population=cake_parts, k=size)
+        cut_index = self.player1_cut(cake)
 
-def player1_cut(cake: Cake) -> int:
-    """Jugador 1. Devuelve el índice en el cual cortar la torta"""
-    #return player1_cut_half(cake)
-    return player1_cut_max(cake)
+        first_half, second_half = cake[:cut_index], cake[cut_index:]
+        choice = self.player2_choose(cake, first_half, second_half)
+        if choice == CHOOSE_SECOND:
+            p1_cake = first_half
+            p2_cake = second_half
+        else:
+            p1_cake = second_half
+            p2_cake = first_half
 
-def player1_cut_half(cake: Cake) -> int:
-    """Parte en [0, cut) y [cut, T]."""
-    # Dummy por ahora
-    return int(len(cake) / 2)
+        p1_profit = utility(self.vals.f1, cake, p1_cake)
+        p2_profit = utility(self.vals.f2, cake, p2_cake)
 
-def player1_cut_max(cake: Cake) -> int:
-    """
-    Prueba todos los cortes posibles y se queda con el que le de un valor máximo
-    """
-    # listas de (corte, valor corte)
-    cuts: List[Tuple[int, float]] = []
+        # Output de la iter
+        output = f"cake: {cake}, cut index: {cut_index}\n"
 
-    for cut in range(len(cake)):
-        value = cut_value(cake, cut)
-        cuts.append((cut, value))
+        # Debug printeamos valores de mitades
+        if self.debug:
+            p1_fh = utility(self.vals.f1, cake, first_half)
+            p1_sh = utility(self.vals.f1, cake, second_half)
 
-    return max(cuts, key=lambda t: t[1])[0]
+            p2_fh = utility(self.vals.f2, cake, first_half)
+            p2_sh = utility(self.vals.f2, cake, second_half)
+            output += f"{first_half} -> 1: {p1_fh:.3f}, 2: {p2_fh:.3f}\n"
+            output += f"{second_half} -> 1: {p1_sh:.3f}, 2: {p2_sh:.3f}\n"
 
-def cut_value(cake: Cake, cut_index: int) -> float:
-    """
-    Dada una torta y un corte, devuelve el valor esperado considerando que el
-    jugador 2 va a elegir la mitad que más le conviene.
+        # Cortes y profits
+        output += f" cut: {p1_cake} (1) {p2_cake} (2)\n"
+        output += f"profits: 1: {p1_profit:.3f}, 2: {p2_profit:.3f}"
+        print(output)
 
-    Ejemplo, dada
+        return p1_profit, p2_profit, cut_index
 
-        cake = 1234, cuts:
-        1       1: 0.3 2: 0.6
-        234     1: 0.7 2: 0.4
+    def generate_cake(self, size: int) -> Cake:
+        """Genera una torta aleatoria de tamaño size"""
+        # Genera una aleatoria lista de tamaño k con una distribución uniforme de 
+        # los elementos de population
+        # https://docs.python.org/3/library/random.html#random.choices
+        return ''.join(random.choices(population=cake_flavors, k=size))
 
-    Asume que 2 va a elegir mitad 1, porque paga 0.6 (max) entonces a vos te
-    queda la mitad 234, con paga 0.7. Entonces el valor del corte es 0.7
-    """
+    def player1_cut(self, cake: Cake) -> int:
+        """Jugador 1. Devuelve el índice en el cual cortar la torta"""
+        #return player1_cut_half(cake)
+        return self.player1_cut_max(cake)
 
-    first_half, second_half = cake[:cut_index], cake[cut_index:]
-    p1_first_half_profit = utility(f1, cake, first_half)
-    p2_first_half_profit = utility(f2, cake, first_half)
+    def player1_cut_half(self, cake: Cake) -> int:
+        """Parte en [0, cut) y [cut, T]."""
+        # Dummy por ahora
+        return int(len(cake) / 2)
 
-    p1_second_half_profit = utility(f1, cake, second_half)
-    p2_second_half_profit = utility(f2, cake, second_half)
+    def player1_cut_max(self, cake: Cake) -> int:
+        """
+        Prueba todos los cortes posibles y se queda con el que le de un valor máximo
+        """
+        # listas de (corte, valor corte)
+        cuts: List[Tuple[int, float]] = []
 
-    if p2_first_half_profit > p2_second_half_profit:
-        # Elige el primero, nos toca el segundo
-        return p1_second_half_profit
+        for cut in range(1, len(cake)):
+            self.debug_print(f"\ncut {cut}")
+            
+            value = self.cut_value(cake, cut)
 
-    return p1_first_half_profit
+            self.debug_print(f"{value:.3f}")
 
-CHOOSE_FIRST = False
-CHOOSE_SECOND = True
-def player2_choose(cake: Cake, first: Cake, second: Cake) -> bool:
-    """Jugador 2. Elige la primera o segunda mitad. True si second"""
-    if utility(f2, cake, first) >= utility(f2, cake, second):
-        return CHOOSE_FIRST
+            cuts.append((cut, value))
 
-    return CHOOSE_SECOND
+        max_cut_value = max(cuts, key=lambda t: t[1])
+        self.debug_print(f"predicted value: {max_cut_value[1]}")
+        return max_cut_value[0]
+
+    def cut_value(self, cake: Cake, cut_index: int) -> float:
+        """
+        Dada una torta y un corte, devuelve el valor esperado considerando que el
+        jugador 2 va a elegir la mitad que más le conviene.
+
+        Ejemplo, dada
+
+            cake = 1234, cuts:
+            1       1: 0.3 2: 0.6
+            234     1: 0.7 2: 0.4
+
+        Asume que 2 va a elegir mitad 1, porque paga 0.6 (max) entonces a vos te
+        queda la mitad 234, con paga 0.7. Entonces el valor del corte es 0.7
+        """
+
+        first_half, second_half = cake[:cut_index], cake[cut_index:]
+        p1_first_half_profit = utility(self.vals.f1, cake, first_half)
+        p2_first_half_profit = utility(self.vals.f2, cake, first_half)
+
+        p1_second_half_profit = utility(self.vals.f1, cake, second_half)
+        p2_second_half_profit = utility(self.vals.f2, cake, second_half)
+
+        output = f"{first_half} -> 1: {p1_first_half_profit:.3f}, 2: {p2_first_half_profit:.3f}\n"
+        output += f"{second_half} -> 1: {p1_second_half_profit:.3f}, 2: {p2_second_half_profit:.3f}"
+        self.debug_print(output)
+
+        # Si al p2 le da igual, asumimos que elije la que nos perjudica
+        if p2_first_half_profit == p2_second_half_profit:
+            return min(p1_first_half_profit, p1_second_half_profit)
+
+        if p2_first_half_profit > p2_second_half_profit:
+            # Elige el primero, nos toca el segundo
+            return p1_second_half_profit
+
+        return p1_first_half_profit
+
+
+    def player2_choose(self, cake: Cake, first: Cake, second: Cake) -> bool:
+        """Jugador 2. Elige la primera o segunda mitad. True si second"""
+        if utility(self.vals.f2, cake, first) >= utility(self.vals.f2, cake, second):
+            return CHOOSE_FIRST
+
+        return CHOOSE_SECOND
+
+    def debug_print(self, s: str):
+        if self.debug:
+            print(s)
+
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -6,8 +6,13 @@ Teoría de juegos, TP2 - Cut and choose iterado con información perfecta.
 
 ## TODOs
 
+- Está bien la torta?
 - Informe
 - Gráficos
+  - Histograma de los cortes
+    - habla de la tabla
+  - Histograma de lo que se puede garantizar
+    - habla de si cambia conocer la función
 - Probar diferentes opciones en tablas de gustos
 - Debuggear y ver que ande bien (printear info de debug para cada corte)
 
