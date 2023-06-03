@@ -6,6 +6,9 @@ Argumentos:
 
 import sys
 import random
+import seaborn as sns
+import matplotlib.pyplot as plt
+import pandas as pd
 
 from dataclasses import dataclass
 
@@ -60,16 +63,16 @@ def flavor_valuation_inverse_eq() -> PlayersValuation:
     return PlayersValuation(
         name="inverse eq",
         f1 = {
-            "1": 1,
+            "1": 4,
             "2": 1,
             "3": 0,
             "4": 0,
         },
         f2 ={
-            "1": 0,
-            "2": 0,
-            "3": 1,
-            "4": 1,
+            "1": 1,
+            "2": 1,
+            "3": 0,
+            "4": 0,
         }
     )
 
@@ -124,7 +127,7 @@ def main(args: List[str]):
     # T, N
     cake_size, num_iters = parse_args(args)
 
-    vals = flavor_valuation_inverse()
+    vals = flavor_valuation_inverse_eq()
 
     game = CutAndChoose(debug=False, vals=vals)
 
@@ -146,7 +149,7 @@ class CutAndChoose():
     def play(self, cake_size: int, num_iters: int):
         print(f"Running Cut and choose with #{num_iters} iterations, cakes of size {cake_size} valuations '{self.vals.name}'")
         
-        cuts = {}
+        cuts = []
         player1_total = 0
         player2_total = 0
         for i in range(num_iters):
@@ -154,9 +157,19 @@ class CutAndChoose():
             u1, u2, cut = self.simulate(cake_size)
             player1_total += u1
             player2_total += u2
+
+            cuts.append(cut)
+            
             print()
     
         print(f"totals: 1: {player1_total:.3f}, 2: {player2_total:.3f}")
+        #print(f"cuts: {dict(sorted(cuts.items(), key=lambda item: item[1]))}")
+
+        df = pd.DataFrame(columns=["cut"])
+        df = df.from_dict({"cut": cuts})
+
+        sns.histplot(cuts)
+        plt.show()
         
     def simulate(self, cake_size: int) -> Tuple[int, int, int]: # u1, u2, cut
         cake = self.generate_cake(cake_size)
