@@ -14,7 +14,6 @@ Teoría de juegos, TP2 - Cut and choose iterado con información perfecta.
   - Histograma de lo que se puede garantizar
     - habla de si cambia conocer la función
 - Probar diferentes opciones en tablas de gustos
-- Debuggear y ver que ande bien (printear info de debug para cada corte)
 
 ## Enunciado
 

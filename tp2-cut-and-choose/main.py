@@ -125,31 +125,45 @@ def utility(f: FlavorValuation, cake: Cake, cake_part: Cake) -> float:
 
 def main(args: List[str]):
     # T, N
-    cake_size, num_iters = parse_args(args)
+    cake_size, num_iters, debug = parse_args(args)
 
     vals = flavor_valuation_inverse_eq()
 
-    game = CutAndChoose(debug=False, vals=vals)
+    game = CutAndChoose(debug=debug, vals=vals)
 
-    game.play(cake_size, num_iters)
+    records = game.play(cake_size, num_iters)
+    df = pd.DataFrame()
+    df = df.from_records(records)
 
-def parse_args(args: List[str]) -> Tuple[int, int]:
-    if len(args) != 3:
-        print("usage\n\t main.py <T> <N>")
+    sns.histplot(df["cuts"])
+    plt.show()
+
+
+def parse_args(args: List[str]) -> Tuple[int, int, bool]:
+    if not (len(args) == 3 or len(args) == 4):
+        print("usage\n\t main.py <T> <N> {--debug}")
         exit(1)
     
-    return int(args[1]), int(args[2])
+    T = int(args[1])
+    N = int(args[2])
+    debug = False
+
+    if len(args) == 4 and args[3] == "--debug":
+        debug=True
+
+    return T, N, debug
 
 
 class CutAndChoose():
     def __init__(self, debug: bool, vals: PlayersValuation) -> None:
         self.debug = debug
         self.vals = vals
+        self.debug_print("Printing debug information")
     
-    def play(self, cake_size: int, num_iters: int):
+    def play(self, cake_size: int, num_iters: int) -> Tuple[List[int], Dict[str, List[str]]]:
         print(f"Running Cut and choose with #{num_iters} iterations, cakes of size {cake_size} valuations '{self.vals.name}'")
-        
-        cuts = []
+
+        records = []
         player1_total = 0
         player2_total = 0
         for i in range(num_iters):
@@ -158,18 +172,20 @@ class CutAndChoose():
             player1_total += u1
             player2_total += u2
 
-            cuts.append(cut)
+            records.append({
+                "p1": u1, 
+                "p2": u2,
+                "cut": cut,
+                "iter": i,
+                "p1_total": player1_total,
+                "p2_total": player2_total,
+            })
             
             print()
     
         print(f"totals: 1: {player1_total:.3f}, 2: {player2_total:.3f}")
-        #print(f"cuts: {dict(sorted(cuts.items(), key=lambda item: item[1]))}")
 
-        df = pd.DataFrame(columns=["cut"])
-        df = df.from_dict({"cut": cuts})
-
-        sns.histplot(cuts)
-        plt.show()
+        return records
         
     def simulate(self, cake_size: int) -> Tuple[int, int, int]: # u1, u2, cut
         cake = self.generate_cake(cake_size)
