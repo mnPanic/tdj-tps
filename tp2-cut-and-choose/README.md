@@ -9,11 +9,19 @@ Teoría de juegos, TP2 - Cut and choose iterado con información perfecta.
 - Está bien la torta?
 - Informe
 - Gráficos
+  - Comparar con jugador 1
+  - Gráfico over iterations de la ganancia
   - Histograma de los cortes
     - habla de la tabla
-  - Histograma de lo que se puede garantizar
+  - Histograma de lo que se puede garantizar o boxplot?
     - habla de si cambia conocer la función
 - Probar diferentes opciones en tablas de gustos
+
+ambivalente vs prefiere 1, puede sacar más diferencia
+
+o prefieren 1 cada uno pero son diferentes
+
+con un par de valuaciones la diferencia en la evolución, cuanto se aleja el 1 del 2.
 
 ## Enunciado
 

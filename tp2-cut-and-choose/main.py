@@ -22,6 +22,16 @@ cake_flavors = ["1", "2", "3", "4"]
 CHOOSE_FIRST = False
 CHOOSE_SECOND = True
 
+# Corta al medio siempre. Control
+P1_STRAT_HALF = "half"
+
+# Información completa, sabe los gustos del otro jugador
+P1_STRAT_COMPLETE = "complete"
+
+# Información incompleta, no sabe los gustos del otro jugador e intenta
+# garantizar 0.5
+P1_STRAT_INCOMPLETE = "incomplete"
+
 @dataclass
 class PlayersValuation():
     name: str
@@ -129,7 +139,7 @@ def main(args: List[str]):
 
     vals = flavor_valuation_inverse_eq()
 
-    game = CutAndChoose(debug=debug, vals=vals)
+    game = CutAndChoose(debug=debug, vals=vals, p1_strat=P1_STRAT_COMPLETE)
 
     records = game.play(cake_size, num_iters)
     df = pd.DataFrame()
@@ -137,7 +147,6 @@ def main(args: List[str]):
 
     sns.histplot(df["cuts"])
     plt.show()
-
 
 def parse_args(args: List[str]) -> Tuple[int, int, bool]:
     if not (len(args) == 3 or len(args) == 4):
@@ -153,11 +162,11 @@ def parse_args(args: List[str]) -> Tuple[int, int, bool]:
 
     return T, N, debug
 
-
 class CutAndChoose():
-    def __init__(self, debug: bool, vals: PlayersValuation) -> None:
+    def __init__(self, debug: bool, vals: PlayersValuation, p1_strat: str) -> None:
         self.debug = debug
         self.vals = vals
+        self.p1_strat = p1_strat
         self.debug_print("Printing debug information")
     
     def play(self, cake_size: int, num_iters: int) -> Tuple[List[int], Dict[str, List[str]]]:
@@ -173,8 +182,10 @@ class CutAndChoose():
             player2_total += u2
 
             records.append({
-                "p1": u1, 
+                "p1": u1,
                 "p2": u2,
+                "val": self.vals.name,
+                "p1_strat": self.p1_strat,
                 "cut": cut,
                 "iter": i,
                 "p1_total": player1_total,
@@ -234,15 +245,41 @@ class CutAndChoose():
 
     def player1_cut(self, cake: Cake) -> int:
         """Jugador 1. Devuelve el índice en el cual cortar la torta"""
-        #return player1_cut_half(cake)
-        return self.player1_cut_max(cake)
+        if self.p1_strat == P1_STRAT_HALF:
+            return self.player1_cut_half(cake)
+        elif self.p1_strat == P1_STRAT_COMPLETE:
+            return self.player1_cut_complete(cake)
+        elif self.p1_strat == P1_STRAT_INCOMPLETE:
+            return self.player1_cut_incomplete(cake)
+    
+        return -1
 
     def player1_cut_half(self, cake: Cake) -> int:
         """Parte en [0, cut) y [cut, T]."""
-        # Dummy por ahora
         return int(len(cake) / 2)
 
-    def player1_cut_max(self, cake: Cake) -> int:
+    def player1_cut_incomplete(self, cake: Cake) -> int:
+        """Intenta de garantizarse 0.5"""
+        # Se queda con el corte que minimiza la diferencia entre las dos partes
+
+        # Lista de corte, diferencia
+        cuts: List[Tuple[int, float]] = []
+
+        for cut in range(1, len(cake)):
+            first_half = cake[:cut]
+
+            # Como los valores están normalizados, sabemos que la segunda mitad
+            # es 1 - el primero
+            first_value = utility(self.vals.f1, cake, first_half)
+            second_value = 1 - first_value
+
+            dif = abs(first_value - second_value)
+            cuts.append((cut, dif))
+
+        return min(cuts, key=lambda t: t[1])[0]
+
+
+    def player1_cut_complete(self, cake: Cake) -> int:
         """
         Prueba todos los cortes posibles y se queda con el que le de un valor máximo
         """
