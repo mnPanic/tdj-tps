@@ -16,12 +16,27 @@ Teoría de juegos, TP2 - Cut and choose iterado con información perfecta.
   - Histograma de lo que se puede garantizar o boxplot?
     - habla de si cambia conocer la función
 - Probar diferentes opciones en tablas de gustos
+- Refinar output
 
 ambivalente vs prefiere 1, puede sacar más diferencia
 
 o prefieren 1 cada uno pero son diferentes
 
-con un par de valuaciones la diferencia en la evolución, cuanto se aleja el 1 del 2.
+con un par de valuaciones la diferencia en la evolución, cuanto se aleja el 1
+del 2.
+
+## Exp
+
+- ver para cada tabla de valoración, como se comportan las estrategias del p1
+  - la strat de información incompleta en la teoría siempre te garantiza 0.5 +-
+    epsilon. La idea sería mostrar que la nuestra funciona mejor para algunas
+    tablas (pero no para otras)
+
+clases de equivalencia de valuaciones?
+
+- iguales (identity ambos, o igual a 1 todos son la misma)
+- inversos
+- cambia con algunos en cero? se puede probar con la anterior
 
 ## Enunciado
 

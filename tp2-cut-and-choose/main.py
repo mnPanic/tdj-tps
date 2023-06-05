@@ -6,9 +6,6 @@ Argumentos:
 
 import sys
 import random
-import seaborn as sns
-import matplotlib.pyplot as plt
-import pandas as pd
 
 from dataclasses import dataclass
 
@@ -32,121 +29,15 @@ P1_STRAT_COMPLETE = "complete"
 # garantizar 0.5
 P1_STRAT_INCOMPLETE = "incomplete"
 
-@dataclass
-class PlayersValuation():
-    name: str
-    f1: FlavorValuation
-    f2: FlavorValuation
-
-def flavor_valuation_identity() -> PlayersValuation:
-    identity_valuation = {
-        "1": 1,
-        "2": 2,
-        "3": 3,
-        "4": 4,
-    }
-
-    return PlayersValuation(
-        name="identity",
-        f1=identity_valuation,
-        f2=identity_valuation,
-    )
-
-def flavor_valuation_inverse() -> PlayersValuation:
-    return PlayersValuation(
-        name="inverse",
-        f1 = {
-            "1": 4,
-            "2": 3,
-            "3": 2,
-            "4": 1,
-        },
-        f2 ={
-            "1": 1,
-            "2": 2,
-            "3": 3,
-            "4": 4,
-        }
-    )
-
-def flavor_valuation_inverse_eq() -> PlayersValuation:
-    return PlayersValuation(
-        name="inverse eq",
-        f1 = {
-            "1": 4,
-            "2": 1,
-            "3": 0,
-            "4": 0,
-        },
-        f2 ={
-            "1": 1,
-            "2": 1,
-            "3": 0,
-            "4": 0,
-        }
-    )
-
-def flavor_valuation_id_eq() -> PlayersValuation:
-    return PlayersValuation(
-        name="id_eq",
-        f1 = {
-            "1": 1,
-            "2": 2,
-            "3": 3,
-            "4": 4,
-        },
-        f2 ={
-            "1": 1,
-            "2": 1,
-            "3": 1,
-            "4": 1,
-        }
-    )
-
-def flavor_valuation_eq() -> PlayersValuation:
-    return PlayersValuation(
-        name="eq",
-        f1 = {
-            "1": 1,
-            "2": 1,
-            "3": 1,
-            "4": 1,
-        },
-        f2 ={
-            "1": 1,
-            "2": 1,
-            "3": 1,
-            "4": 1,
-        }
-    )
-
-
-def utility(f: FlavorValuation, cake: Cake, cake_part: Cake) -> float:
-    """Función de valoración de un jugador, normalizada a 1"""
-    max_value = 0
-    for part in cake:
-        max_value += f[part]
-
-    value = 0
-    for part in cake_part:
-        value += f[part]
-    
-    return value/max_value
-
 def main(args: List[str]):
     # T, N
     cake_size, num_iters, debug = parse_args(args)
 
     vals = flavor_valuation_inverse_eq()
 
-    game = CutAndChoose(debug=debug, vals=vals, p1_strat=P1_STRAT_COMPLETE)
+    game = CutAndChoose(debug=debug, vals=vals, p1_strat=P1_STRAT_INCOMPLETE)
 
-    records = game.play(cake_size, num_iters)
-    df = pd.DataFrame()
-    df = df.from_records(records)
-
-    sns.histplot(df["cuts"])
-    plt.show()
+    game.play(cake_size, num_iters)
 
 def parse_args(args: List[str]) -> Tuple[int, int, bool]:
     if not (len(args) == 3 or len(args) == 4):
@@ -162,21 +53,29 @@ def parse_args(args: List[str]) -> Tuple[int, int, bool]:
 
     return T, N, debug
 
+
+@dataclass
+class PlayersValuation():
+    name: str
+    f1: FlavorValuation
+    f2: FlavorValuation
+
 class CutAndChoose():
-    def __init__(self, debug: bool, vals: PlayersValuation, p1_strat: str) -> None:
+    def __init__(self, debug: bool, quiet: bool, vals: PlayersValuation, p1_strat: str) -> None:
         self.debug = debug
+        self.quiet = quiet
         self.vals = vals
         self.p1_strat = p1_strat
         self.debug_print("Printing debug information")
-    
+
     def play(self, cake_size: int, num_iters: int) -> Tuple[List[int], Dict[str, List[str]]]:
-        print(f"Running Cut and choose with #{num_iters} iterations, cakes of size {cake_size} valuations '{self.vals.name}'")
+        self.print(f"Running Cut and choose with {num_iters} iterations, cakes of size {cake_size} and valuations of kind '{self.vals.name}'")
 
         records = []
         player1_total = 0
         player2_total = 0
         for i in range(num_iters):
-            print(f"(#{i})")
+            self.print(f"(#{i})")
             u1, u2, cut = self.simulate(cake_size)
             player1_total += u1
             player2_total += u2
@@ -192,9 +91,9 @@ class CutAndChoose():
                 "p2_total": player2_total,
             })
             
-            print()
+            self.print()
     
-        print(f"totals: 1: {player1_total:.3f}, 2: {player2_total:.3f}")
+        self.print(f"totals: 1: {player1_total:.3f}, 2: {player2_total:.3f}")
 
         return records
         
@@ -219,7 +118,7 @@ class CutAndChoose():
         # Output de la iter
         output = f"cake: {cake}, cut index: {cut_index}\n"
 
-        # Debug printeamos valores de mitades
+        # Debug agregamos valores de mitades
         if self.debug:
             p1_fh = utility(self.vals.f1, cake, first_half)
             p1_sh = utility(self.vals.f1, cake, second_half)
@@ -232,7 +131,7 @@ class CutAndChoose():
         # Cortes y profits
         output += f" cut: {p1_cake} (1) {p2_cake} (2)\n"
         output += f"profits: 1: {p1_profit:.3f}, 2: {p2_profit:.3f}"
-        print(output)
+        self.print(output)
 
         return p1_profit, p2_profit, cut_index
 
@@ -343,9 +242,113 @@ class CutAndChoose():
 
         return CHOOSE_SECOND
 
+    def print(self, s: str=""):
+        if not self.quiet:
+            print(s)
+
     def debug_print(self, s: str):
         if self.debug:
-            print(s)
+            self.print(s)
+
+def flavor_valuation_identity() -> PlayersValuation:
+    identity_valuation = {
+        "1": 1,
+        "2": 2,
+        "3": 3,
+        "4": 4,
+    }
+
+    return PlayersValuation(
+        name="identity",
+        f1=identity_valuation,
+        f2=identity_valuation,
+    )
+
+def flavor_valuation_inverse() -> PlayersValuation:
+    return PlayersValuation(
+        name="inverse",
+        f1 = {
+            "1": 4,
+            "2": 3,
+            "3": 2,
+            "4": 1,
+        },
+        f2 ={
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+        }
+    )
+
+def flavor_valuation_inverse_eq() -> PlayersValuation:
+    return PlayersValuation(
+        name="inverse eq",
+        f1 = {
+            "1": 4,
+            "2": 1,
+            "3": 0,
+            "4": 0,
+        },
+        f2 ={
+            "1": 1,
+            "2": 1,
+            "3": 0,
+            "4": 0,
+        }
+    )
+
+def flavor_valuation_id_eq() -> PlayersValuation:
+    return PlayersValuation(
+        name="id_eq",
+        f1 = {
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+        },
+        f2 ={
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+        }
+    )
+
+def flavor_valuation_eq() -> PlayersValuation:
+    return PlayersValuation(
+        name="eq",
+        f1 = {
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+        },
+        f2 ={
+            "1": 1,
+            "2": 1,
+            "3": 1,
+            "4": 1,
+        }
+    )
+
+
+def utility(f: FlavorValuation, cake: Cake, cake_part: Cake) -> float:
+    """Función de valoración de un jugador, normalizada a 1"""
+    max_value = 0
+    for part in cake:
+        max_value += f[part]
+    
+    # Necesario por si hay gustos que aportan 0
+    if max_value == 0:
+        return 0
+
+    value = 0
+    for part in cake_part:
+        value += f[part]
+    
+    return value/max_value
+
 
 
 if __name__ == "__main__":
