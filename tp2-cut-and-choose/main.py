@@ -19,23 +19,22 @@ cake_flavors = ["1", "2", "3", "4"]
 CHOOSE_FIRST = False
 CHOOSE_SECOND = True
 
-# Corta al medio siempre. Control
-P1_STRAT_HALF = "half"
-
 # Información completa, sabe los gustos del otro jugador
-P1_STRAT_COMPLETE = "complete"
+P1_INFO_COMPLETE = "complete"
 
 # Información incompleta, no sabe los gustos del otro jugador e intenta
 # garantizar 0.5
-P1_STRAT_INCOMPLETE = "incomplete"
+P1_INFO_INCOMPLETE = "incomplete"
 
 def main(args: List[str]):
     # T, N
     cake_size, num_iters, debug = parse_args(args)
 
-    vals = flavor_valuation_inverse_eq()
-
-    game = CutAndChoose(debug=debug, vals=vals, p1_strat=P1_STRAT_INCOMPLETE)
+    game = CutAndChoose(
+        debug=debug, 
+        vals=flavor_valuation_inverse(), 
+        p1_info=P1_INFO_COMPLETE,
+    )
 
     game.play(cake_size, num_iters)
 
@@ -61,11 +60,11 @@ class PlayersValuation():
     f2: FlavorValuation
 
 class CutAndChoose():
-    def __init__(self, debug: bool, quiet: bool, vals: PlayersValuation, p1_strat: str) -> None:
+    def __init__(self, debug: bool, quiet: bool, vals: PlayersValuation, p1_info: str) -> None:
         self.debug = debug
         self.quiet = quiet
         self.vals = vals
-        self.p1_strat = p1_strat
+        self.p1_info = p1_info
         self.debug_print("Printing debug information")
 
     def play(self, cake_size: int, num_iters: int) -> Tuple[List[int], Dict[str, List[str]]]:
@@ -84,7 +83,7 @@ class CutAndChoose():
                 "p1": u1,
                 "p2": u2,
                 "val": self.vals.name,
-                "p1_strat": self.p1_strat,
+                "p1_info": self.p1_info,
                 "cut": cut,
                 "iter": i,
                 "p1_total": player1_total,
@@ -144,11 +143,10 @@ class CutAndChoose():
 
     def player1_cut(self, cake: Cake) -> int:
         """Jugador 1. Devuelve el índice en el cual cortar la torta"""
-        if self.p1_strat == P1_STRAT_HALF:
-            return self.player1_cut_half(cake)
-        elif self.p1_strat == P1_STRAT_COMPLETE:
+        if self.p1_info == P1_INFO_COMPLETE:
             return self.player1_cut_complete(cake)
-        elif self.p1_strat == P1_STRAT_INCOMPLETE:
+        
+        elif self.p1_info == P1_INFO_INCOMPLETE:
             return self.player1_cut_incomplete(cake)
     
         return -1
@@ -259,14 +257,14 @@ def flavor_valuation_identity() -> PlayersValuation:
     }
 
     return PlayersValuation(
-        name="identity",
+        name="identidad",
         f1=identity_valuation,
         f2=identity_valuation,
     )
 
 def flavor_valuation_inverse() -> PlayersValuation:
     return PlayersValuation(
-        name="inverse",
+        name="opuesto",
         f1 = {
             "1": 4,
             "2": 3,
@@ -281,57 +279,40 @@ def flavor_valuation_inverse() -> PlayersValuation:
         }
     )
 
-def flavor_valuation_inverse_eq() -> PlayersValuation:
+
+def flavor_valuation_inverse_2() -> PlayersValuation:
     return PlayersValuation(
-        name="inverse eq",
+        name="opuesto disjunto",
         f1 = {
-            "1": 4,
+            "1": 1,
             "2": 1,
             "3": 0,
             "4": 0,
         },
         f2 ={
+            "1": 0,
+            "2": 0,
+            "3": 1,
+            "4": 1,
+        }
+    )
+
+def flavor_valuation_todo_picky() -> PlayersValuation:
+    return PlayersValuation(
+        name="todo_v_picky",
+        f1 = {
             "1": 1,
             "2": 1,
+            "3": 1,
+            "4": 1,
+        },
+        f2 ={
+            "1": 1,
+            "2": 0,
             "3": 0,
             "4": 0,
         }
     )
-
-def flavor_valuation_id_eq() -> PlayersValuation:
-    return PlayersValuation(
-        name="id_eq",
-        f1 = {
-            "1": 1,
-            "2": 2,
-            "3": 3,
-            "4": 4,
-        },
-        f2 ={
-            "1": 1,
-            "2": 1,
-            "3": 1,
-            "4": 1,
-        }
-    )
-
-def flavor_valuation_eq() -> PlayersValuation:
-    return PlayersValuation(
-        name="eq",
-        f1 = {
-            "1": 1,
-            "2": 1,
-            "3": 1,
-            "4": 1,
-        },
-        f2 ={
-            "1": 1,
-            "2": 1,
-            "3": 1,
-            "4": 1,
-        }
-    )
-
 
 def utility(f: FlavorValuation, cake: Cake, cake_part: Cake) -> float:
     """Función de valoración de un jugador, normalizada a 1"""
