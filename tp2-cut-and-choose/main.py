@@ -31,7 +31,10 @@ def main(args: List[str]):
     cake_size, num_iters, debug = parse_args(args)
 
     game = CutAndChoose(
-        debug=debug, 
+        debug=debug,
+        quiet=False, # Esto en true es útil para los notebooks
+        
+        # Argumentos configurables:
         vals=flavor_valuation_inverse(), 
         p1_info=P1_INFO_COMPLETE,
     )

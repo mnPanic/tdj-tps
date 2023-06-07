@@ -2,62 +2,99 @@
 
 Teoría de juegos, TP2 - Cut and choose iterado con información perfecta.
 
-[Link al campus](https://campus.exactas.uba.ar/mod/assign/view.php?id=319058)
+Archivos:
+
+- Enunciado: [`enunciado.txt`](enunciado.txt)
+- Implementación: [`main.py`](main.py)
+  - Ver [uso del programa](#uso-del-programa) para correrlo
+- Experimentos: [`experimentos.ipynb`](experimentos.ipynb)
+  - Para correrlos usar cualquier programa que permita ver *notebooks* de
+    python, como `jupyter lab`, `jupyter notebook`, etc.
 
 ## Uso del programa
 
-TODO
+Requerimientos:
 
-## TODOs
+- Python 3.8 o superior
+- Para correr el programa principal no hace falta ninguna dependencia externa.
+- Para experimentos: `seaborn`, `pandas`, `matplotlib` y `tqdm`
 
-- Está bien la torta?
-- Informe
-- Gráficos
-  - Comparar con jugador 1
-  - Gráfico over iterations de la ganancia
-  - Histograma de los cortes
-    - habla de la tabla
-  - Histograma de lo que se puede garantizar o boxplot?
-    - habla de si cambia conocer la función
-- Probar diferentes opciones en tablas de gustos
-- Refinar output
+Para correr el programa,
 
-ambivalente vs prefiere 1, puede sacar más diferencia
+```bash
+main.py <T> <N> {--debug}
+```
 
-o prefieren 1 cada uno pero son diferentes
+Argumentos:
 
-con un par de valuaciones la diferencia en la evolución, cuanto se aleja el 1
-del 2.
+- `T`: Tamaño de la torta
+- `N`: Cantidad de iteraciones
+- `--debug`: Opción para correr con modo debug, que tiene más prints (no recomendable)
 
-## Exp
+Ejecuta el programa para **información completa** y tablas de valuación
+**inversas**. Si se desea cambiar, hay que configurarlo desde el código (y
+no desde línea de comandos)
 
-- ver para cada tabla de valoración, como se comportan las estrategias del p1
-  - la strat de información incompleta en la teoría siempre te garantiza 0.5 +-
-    epsilon. La idea sería mostrar que la nuestra funciona mejor para algunas
-    tablas (pero no para otras)
+Ejemplo de output:
 
-clases de equivalencia de valuaciones?
+```bash
+$ python3 main.py 10 10
+Running Cut and choose with 10 iterations, cakes of size 10 and valuations of kind 'opuesto'
+(#0)
+cake: 3221423141, cut index: 5
+ cut: 23141 (1) 32214 (2)
+profits: 1: 0.519, 2: 0.522
 
-- iguales (identity ambos, o igual a 1 todos son la misma)
-- inversos
-- cambia con algunos en cero? se puede probar con la anterior
+(#1)
+cake: 2214323211, cut index: 5
+ cut: 23211 (1) 22143 (2)
+profits: 1: 0.552, 2: 0.571
 
-## Enunciado
+(#2)
+cake: 1413332143, cut index: 5
+ cut: 14133 (1) 32143 (2)
+profits: 1: 0.520, 2: 0.520
 
-Se trata de escribir un programa que simule el proceso Cut & Choose iterado con información completa.
+(#3)
+cake: 4442142143, cut index: 5
+ cut: 42143 (1) 44421 (2)
+profits: 1: 0.524, 2: 0.517
 
-A partir de 4 componentes comestibles (1, 2, 3 y 4) que formarán parte de una "torta unidimensional", se tiene una función f1 (o tabla) a valores reales no negativos que indica cuánto le gusta cada componente al primer jugador, y otra f2 con lo mismo para el segundo jugador.
+(#4)
+cake: 4432114141, cut index: 4
+ cut: 114141 (1) 4432 (2)
+profits: 1: 0.720, 2: 0.520
 
-Leer enteros T y N. A partir de un arreglo de T elementos todos del conjunto {1,2,3,4} que representa la torta, la función de valoración ui de un jugador se calcula simplemente en proporción a la cantidad de 1, de 2, de 3 y de 4 que contiene el arreglo, sumando los "gustos" del jugador, normalizado a 1. Es decir, para i=1,2,
+(#5)
+cake: 4234311433, cut index: 5
+ cut: 11433 (1) 42343 (2)
+profits: 1: 0.591, 2: 0.571
 
-    ui (p1...pt)   =   1/factor  Sumatoria j=1,...,t  fi (pj).
+(#6)
+cake: 2432244244, cut index: 5
+ cut: 24322 (1) 44244 (2)
+profits: 1: 0.632, 2: 0.581
 
-Conociendo las u1 y u2, el primer jugador divide la torta con un solo corte, y el segundo elige una de las dos mitades. Así, se pide hacer una simulación que consiste en el Cut & Choose para arreglos de tamaño T creados aleatoriamente con las componentes mencionadas (cantidades cualesquiera). El procedimiento debe ser “estratégico”, esto es, el primer jugador al conocer u2 divide teniendo en cuenta esta información. Debe dividir el arreglo en 2 mitades conexas (ambas de entre 0 y T elementos), luego el segundo jugador elegirá la mitad que le convenga, quedando la otra para el primero. Y así ambos van sumando las ganancias dadas por las ui a lo largo de N iteraciones.
+(#7)
+cake: 3334321123, cut index: 4
+ cut: 321123 (1) 3334 (2)
+profits: 1: 0.720, 2: 0.520
 
-Tener en cuenta que en cada paso el primer jugador, una vez vista la torta, debe cortarla pensando en su propio beneficio, pero suponiendo cómo será la elección del segundo, de quien conoce sus "gustos". De ser necesario, explicar el criterio usado para esto.
+(#8)
+cake: 2412423223, cut index: 5
+ cut: 23223 (1) 24124 (2)
+profits: 1: 0.520, 2: 0.520
 
-Hacer la simulación N veces para los mismos parámetros, imprimiendo los datos relevantes en cada paso. (Opcionalmente, graficar.)
+(#9)
+cake: 2323113132, cut index: 5
+ cut: 13132 (1) 23231 (2)
+profits: 1: 0.517, 2: 0.524
 
-Concluir comentando los resultados para distintas opciones en las tablas de gustos, observando las ganancias de los participantes.
+totals: 1: 5.814, 2: 5.366
+```
 
-Lenguaje: a elección. Entregar el programa y un informe de 1 a 3 páginas.
+en cada iteración, muestra la torta generada, el índice del corte, la mitad
+elegida por cada jugador y la ganancia de cada uno. Al final muestra las
+ganancias totales.
+No hace ningún gráfico, hay que hacerlos programáticamente (como hacemos en los
+experimentos)
