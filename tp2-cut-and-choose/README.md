@@ -5,6 +5,7 @@ Teoría de juegos, TP2 - Cut and choose iterado con información perfecta.
 Archivos:
 
 - Enunciado: [`enunciado.txt`](enunciado.txt)
+- Informe: [`informe.pdf`](informe.pdf)
 - Implementación: [`main.py`](main.py)
   - Ver [uso del programa](#uso-del-programa) para correrlo
 - Experimentos: [`experimentos.ipynb`](experimentos.ipynb)
