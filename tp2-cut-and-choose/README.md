@@ -4,6 +4,10 @@ Teoría de juegos, TP2 - Cut and choose iterado con información perfecta.
 
 [Link al campus](https://campus.exactas.uba.ar/mod/assign/view.php?id=319058)
 
+## Uso del programa
+
+TODO
+
 ## TODOs
 
 - Está bien la torta?

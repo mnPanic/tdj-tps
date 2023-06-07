@@ -280,9 +280,9 @@ def flavor_valuation_inverse() -> PlayersValuation:
     )
 
 
-def flavor_valuation_inverse_2() -> PlayersValuation:
+def flavor_valuation_inverse_disjoint() -> PlayersValuation:
     return PlayersValuation(
-        name="opuesto disjunto",
+        name="opuesto_disjunto",
         f1 = {
             "1": 1,
             "2": 1,
@@ -297,9 +297,9 @@ def flavor_valuation_inverse_2() -> PlayersValuation:
         }
     )
 
-def flavor_valuation_todo_picky() -> PlayersValuation:
+def flavor_valuation_igual_picky() -> PlayersValuation:
     return PlayersValuation(
-        name="todo_v_picky",
+        name="igual_vs_picky",
         f1 = {
             "1": 1,
             "2": 1,
