@@ -1,0 +1,11 @@
+Sean los enteros positivos n1, n2, n3, r1, r2, r3 con 
+
+    n1 <= n2 <= n3 y r1 < r2 < r3
+
+Considerar el siguiente juego por turnos de información perfecta para los jugadores L y R. Hay 3 pilas, de n1, n2 y n3 objetos, respectivamente. Cada jugador a su turno debe quitar r1, r2 o r3 objetos de una misma pila. Comienza el jugador L. Gana quien juega último.
+
+Escribir un programa que, dadas estas variables de entrada, calcule los conjuntos de P-posiciones y N-posiciones, y que incluya además una función que, dada una posición para el jugador L, devuelva la resultante de hacer una jugada óptima. Si la posición original no fuese ganadora para L, se deberá "dificultar" la decisión al jugador R en su siguiente turno si fuera posible. Opcionalmente, hacer también el cálculo de P-posiciones y N-posiciones para la versión en que pierde quien juega último.
+
+Lenguaje a elección (i.e., Python).
+
+Incluir un informe de 1 a 4 páginas (pdf, doc o txt) con el contexto, la explicación y la justificación de los métodos y criterios usados. Si fuese necesario, establecer una cota superior razonable para n3.
