@@ -30,6 +30,8 @@ estrategia optima:
 - Si estoy en una P posicion, la jugada óptima es la que me lleva a la posición
   N de mínimo valor
 
+siempre elijo la que me lleva a una posición de mínimo valor
+
 si el valor de P es 0 -> elegis siempre el de mínimo valor
 
 valor de una posición N

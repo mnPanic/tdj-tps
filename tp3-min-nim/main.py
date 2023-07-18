@@ -15,10 +15,15 @@ def calculate_positions(n1, n2, n3, r1, r2, r3):
         moves=[r1, r2, r3]
     )
 
-    sim = Simulator(outcomes={})
-    p_pos, n_pos = sim.calculate_positions_for_game(initial_game)
+    #sim = Simulator(outcomes={})
+    #p_pos, n_pos = sim.calculate_positions_for_game(initial_game)
 
-    print(f"p positions: {p_pos}\nn positions: {n_pos}")
+    #print(f"p positions: {p_pos}\nn positions: {n_pos}")
+    play_interactive_game(
+        playerL=HumanPlayer(),
+        playerR=HumanPlayer(),
+        game=initial_game,
+    )
 
 OutcomeClass = bool
 P: OutcomeClass = False
@@ -27,6 +32,7 @@ N: OutcomeClass = True
 
 NimHeap = int
 Position = List[NimHeap]
+        
 
 @dataclass
 class Game:
@@ -43,11 +49,18 @@ class Game:
     def positions(self) -> List[int]:
         return range(len(self.position))
 
+    def finished(self) -> bool:
+        for heap_idx in self.positions():
+            if len(self.legal_moves(heap_idx)) != 0:
+                return False
+        
+        return True
+
     def legal_moves(self, heap_idx) -> List[int]:
-        return filter(
+        return list(filter(
             lambda move: self.is_legal_move(heap_idx, move), 
             self.moves,
-        )
+        ))
 
     def move(self, heap_idx: int, chosen_move: int) -> "Game":
         """
@@ -66,7 +79,10 @@ class Game:
         )
 
     def is_legal_move(self, heap_idx: int, chosen_move: int) -> bool:
-        return self.heap(heap_idx) >= chosen_move
+        return (
+            heap_idx < len(self.position) and heap_idx >= 0
+            and self.heap(heap_idx) >= chosen_move
+        )
 
 def outcomes_to_str(outcomes: List[OutcomeClass]) -> str:
     return f"[{', '.join(map(outcome_to_str, outcomes))}]"
@@ -173,6 +189,50 @@ class Simulator:
         """
         return ''.join(map(str, sorted(game.position)))
 
+
+
+class Player:
+    """Jugador de min nim"""
+    def choose_move(self, game: Game) -> Tuple[int, int]:
+        raise NotImplementedError
+
+class HumanPlayer(Player):
+    def choose_move(self, game: Game) -> Tuple[int, int]:
+        print(f"Estado del juego: {game.position}")
+        positions = list(map(lambda p: p+1, game.positions()))
+        heap = input(f"pila # ({positions}): ")
+        take = input(f"tomar ({game.moves}): ")
+
+        return int(heap) - 1, int(take)
+
+class OptimalComputerPlayer(Player):
+    def choose_move(self, game: Game) -> Tuple[int, int]:
+        pass
+
+def play_interactive_game(
+    playerL: Player,
+    playerR: Player,
+    game: Game,
+):
+    playerL: Tuple[str, Player] = ("L", playerL)
+    playerR: Tuple[str, Player] = ("R", playerR)
+
+    player = playerL
+    nextPlayer = playerR
+    while not game.finished():
+        print(f"Turno de {player[0]}")
+        heap, take = player[1].choose_move(game)
+
+        while not game.is_legal_move(heap, take):
+            print("Movimiento ilegal, elegí de vuelta")
+            heap, take = player[1].choose_move(game)
+
+        game = game.move(heap, take)
+
+        player, nextPlayer = nextPlayer, player
+        print("-" * 20)
+    
+    print(f"Gana {nextPlayer[0]}!")
 
 def parse_args(args: List[str]) -> Tuple[int, int, int, int, int, int]:
     if not (len(args) == 7):
