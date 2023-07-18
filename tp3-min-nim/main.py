@@ -4,8 +4,6 @@ from typing import List, Tuple, Dict
 
 from dataclasses import dataclass
 
-import collections as col
-
 def main(args: List[str]):
     n1, n2, n3, r1, r2, r3 = parse_args(args)
 
@@ -18,9 +16,7 @@ def calculate_positions(n1, n2, n3, r1, r2, r3):
     )
 
     sim = Simulator(outcomes={})
-    c = sim.mem_outcome(initial_game)
-
-    p_pos, n_pos = sim.positions()
+    p_pos, n_pos = sim.calculate_positions_for_game(initial_game)
 
     print(f"p positions: {p_pos}\nn positions: {n_pos}")
 
@@ -34,6 +30,10 @@ Position = List[NimHeap]
 
 @dataclass
 class Game:
+    """
+    Tiene una posición y una lista de movimientos válida,
+    permite manualmente avanzar el juego mediante movimientos
+    """
     position: Position
     moves: List[int]
 
@@ -50,7 +50,10 @@ class Game:
         )
 
     def move(self, heap_idx: int, chosen_move: int) -> "Game":
-        """Realiza un movimiento en una posición. Asume que es legal"""
+        """
+        Realiza un movimiento en una posición.
+        Asume que es legal (ver legal_moves)
+        """
         old_heap = self.heap(heap_idx)
         new_heap = old_heap - chosen_move
         
@@ -76,12 +79,21 @@ def outcome_to_str(outcome_class: OutcomeClass) -> str:
 
 @dataclass
 class Simulator:
+    """
+    Simula todas las partidas posibles para obtener los conjuntos de
+    P-posiciones y N-posiciones.
+    """
     outcomes: Dict[str, Tuple[Position, OutcomeClass]]
 
-    def key(self, game: Game) -> str:
-        return ''.join(map(str, sorted(game.position)))
+    def calculate_positions_for_game(
+            self, 
+            initial_game: Game,
+        ) -> Tuple[List[Position], List[Position]]:
+        self._mem_outcome(initial_game)
+        return self._positions()
 
-    def positions(self) -> Tuple[List[Position], List[Position]]:
+    def _positions(self) -> Tuple[List[Position], List[Position]]:
+        """Calcula las p-posiciones y n-posiciones."""
         p_positions = []
         n_positions = []
         for pos, outcome in self.outcomes.values():
@@ -92,28 +104,18 @@ class Simulator:
         
         return p_positions, n_positions
 
-    def store_outcome(self, game: Game, outcome: OutcomeClass):
-        self.outcomes[self.key(game)] = (game.position, outcome)
-
-    def find_outcome(self, game: Game) -> OutcomeClass:
-        if self.key(game) not in self.outcomes:
-            return None
-    
-        _, outcome = self.outcomes[self.key(game)]
-        return outcome
-
-    def mem_outcome(self, game: Game, indent: str="") -> OutcomeClass:
-        outcome = self.find_outcome(game)
+    def _mem_outcome(self, game: Game, indent: str="") -> OutcomeClass:
+        outcome = self._find_outcome(game)
         if outcome is not None:
             print(f"{indent}outcome memoized for {game.position}: {outcome_to_str(outcome)}")
             return outcome
     
-        outcome = self.outcome(game, indent)
-        self.store_outcome(game, outcome)
+        outcome = self._outcome(game, indent)
+        self._store_outcome(game, outcome)
 
         return outcome
 
-    def outcome(self, game: Game, indent: str) -> OutcomeClass:
+    def _outcome(self, game: Game, indent: str) -> OutcomeClass:
         outcomes = []
         print(f"{indent}{game.position}")
         for heap_idx in game.positions():
@@ -123,17 +125,22 @@ class Simulator:
             for move in game.legal_moves(heap_idx):
                 game_result = game.move(heap_idx, move)
                 print(f"{indent}\ttake {move} from {game.heap(heap_idx)} (#{heap_idx})")
-                sub_outcome = self.mem_outcome(game_result, indent+"\t\t")
+                sub_outcome = self._mem_outcome(game_result, indent+"\t\t")
                 outcomes.append(sub_outcome)
                 
                 print(f"{indent}\t-> next player outcome {outcome_to_str(sub_outcome)}")
 
-        game_outcome = self.outcome_from_outcomes(outcomes)
+        game_outcome = self._outcome_from_outcomes(outcomes)
         print(f"{indent}next player outcomes: {outcomes_to_str(outcomes)} -> {outcome_to_str(game_outcome)}")
 
         return game_outcome
 
-    def outcome_from_outcomes(self, outcomes: List[OutcomeClass]) -> OutcomeClass:
+    def _outcome_from_outcomes(self, outcomes: List[OutcomeClass]) -> OutcomeClass:
+        """
+        Calcula el outcome class de una posición en base a los outcome
+        classes de las posiciones resultantes de hacer todos los movimientos
+        legales
+        """
         if len(outcomes) == 0:
             # Caso base: No tengo movimientos, pierdo
             return P
@@ -147,6 +154,24 @@ class Simulator:
         # Si todas las subclases son N (no hay P) sin importar que haga pierdo.
         # Soy P
         return P
+
+    def _store_outcome(self, game: Game, outcome: OutcomeClass):
+        self.outcomes[self._key(game)] = (game.position, outcome)
+
+    def _find_outcome(self, game: Game) -> OutcomeClass:
+        if self._key(game) not in self.outcomes:
+            return None
+    
+        _, outcome = self.outcomes[self._key(game)]
+        return outcome
+
+    def _key(self, game: Game) -> str:
+        """
+        Esto es necesario porque las Position (listas) no son hasheables.
+        Además permite tomar como equivalentes permutaciones de juegos, evitando
+        re-computar simetrías.
+        """
+        return ''.join(map(str, sorted(game.position)))
 
 
 def parse_args(args: List[str]) -> Tuple[int, int, int, int, int, int]:
