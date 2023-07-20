@@ -36,7 +36,7 @@ class Args:
 
     mode: str # calculate | play
 
-MODE_CALCULATE = "calculate"
+MODE_CALCULATE = "calc"
 MODE_PLAY = "play"
 
 def parse_args(args: List[str]) -> Args:
