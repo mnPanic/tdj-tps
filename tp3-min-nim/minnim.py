@@ -4,35 +4,79 @@ from typing import List, Tuple, Dict
 
 from dataclasses import dataclass
 
-def main(args: List[str]):
-    n1, n2, n3, r1, r2, r3 = parse_args(args)
+def main(raw_args: List[str]):
+    args = parse_args(raw_args)
+    validate_args(args)
 
-    calculate_positions(n1, n2, n3, r1, r2, r3)
-
-def calculate_positions(n1, n2, n3, r1, r2, r3):
     initial_game = Game(
-        position=[n1, n2, n3],
-        moves=[r1, r2, r3]
+        position=[args.n1, args.n2, args.n3],
+        moves=[args.r1, args.r2, args.r3]
     )
 
-    #sim = Simulator(outcomes={})
-    #p_pos, n_pos = sim.calculate_positions_for_game(initial_game)
+    if args.mode == MODE_PLAY:
+        play_interactive_game(
+            playerL=OptimalComputerPlayer("Computadora"),
+            playerR=HumanPlayer("Humano"),
+            game=initial_game,
+        )
+    else:
+        sim = Simulator(debug=True, outcomes={})
+        p_positions, n_positions = sim.calculate_positions_for_game(initial_game)
 
-    #print(f"p positions: {p_pos}\nn positions: {n_pos}")
-    play_interactive_game(
-        playerL=OptimalComputerPlayer(),
-        playerR=HumanPlayer(),
-        game=initial_game,
+        print(f"P-posiciones:\n{p_positions}\n\nN-posiciones:\n{n_positions}")
+
+@dataclass
+class Args:
+    n1: int
+    n2: int
+    n3: int
+    r1: int
+    r2: int
+    r3: int
+
+    mode: str # calculate | play
+
+MODE_CALCULATE = "calculate"
+MODE_PLAY = "play"
+
+def parse_args(args: List[str]) -> Args:
+    if not (len(args) == 8):
+        print("usage\n\t main.py {calculate|play} n1 n2 n3 r1 r2 r3")
+        exit(1)
+
+    mode = args[1]
+    args = map(int, args[2:])
+    
+    n1, n2, n3, r1, r2, r3 = args
+    return Args(
+        n1 = n1,
+        n2 = n2,
+        n3 = n3,
+        r1 = r1,
+        r2 = r2,
+        r3 = r3,
+        mode = mode,
     )
+
+def validate_args(args: Args):
+    if args.mode not in {MODE_CALCULATE, MODE_PLAY}:
+        print(f"Modo inválido '{args.mode}', debe ser {MODE_CALCULATE} o {MODE_PLAY}")
+        exit(1)
+    
+    if not (args.n1 <= args.n2 and args.n2 <= args.n3):
+        print(f"Pilas inválidas, deben satisfacer n1 <= n2 <= n3")
+        exit(1)
+    
+    if not(args.r1 < args.r2 and args.r2 < args.r3):
+        print(f"Movimientos inválidos, deben satisfacer r1 < r2 < r3")
+        exit(1)
 
 OutcomeClass = bool
 P: OutcomeClass = False
 N: OutcomeClass = True
 
-
 NimHeap = int
 Position = List[NimHeap]
-        
 
 @dataclass
 class Game:
@@ -100,6 +144,7 @@ class Simulator:
     P-posiciones y N-posiciones.
     """
     outcomes: Dict[str, Tuple[Position, OutcomeClass, float]]
+    debug: bool
 
     def calculate_positions_for_game(
             self, 
@@ -109,21 +154,32 @@ class Simulator:
         return self._positions()
 
     def _positions(self) -> Tuple[List[Position], List[Position]]:
-        """Calcula las p-posiciones y n-posiciones."""
+        """
+        Calcula las p-posiciones y n-posiciones.
+        Ordena las posiciones para devolver una representación canónica. Es útil
+        si se quiere hacer "trampa" y jugar contra la máquina con el
+        conocimiento de cuales son N posiciones y P posiciones (alcanza con
+        buscarlas en su representación canónica)
+        """
         p_positions = []
         n_positions = []
-        for pos, outcome in self.outcomes.values():
+        print("Calculando P y N posiciones")
+        for pos, outcome, _ in self.outcomes.values():
             if outcome == P:
-                p_positions.append(pos)
+                p_positions.append(sorted(pos))
             else:
-                n_positions.append(pos)
+                n_positions.append(sorted(pos))
         
         return p_positions, n_positions
+
+    def print(self, s: str):
+        if self.debug:
+            print(s)
 
     def _mem_outcome(self, game: Game, indent: str="") -> OutcomeClass:
         outcome = self._find_outcome(game)
         if outcome is not None:
-            print(f"{indent}outcome memoized for {game.position}: {outcome_to_str(outcome)}")
+            self.print(f"{indent}outcome memoized for {game.position}: {outcome_to_str(outcome)}")
             return outcome
     
         outcome, value = self._outcome(game, indent)
@@ -132,24 +188,24 @@ class Simulator:
         return outcome
 
     def _outcome(self, game: Game, indent: str) -> Tuple[OutcomeClass, float]:
-
-        # TODO: Poda: si el min move no se puede hacer, cortas guardarlos en
+        # Posible poda: si el min move no se puede hacer, cortas guardarlos en
         # orden y que el min sea el primero pedirle los legal moves al juego
+    
         outcomes = []
-        print(f"{indent}{game.position}")
+        self.print(f"{indent}{game.position}")
         for heap_idx in game.positions():
             for move in game.legal_moves(heap_idx):
                 game_result = game.move(heap_idx, move)
 
-                print(f"{indent}\ttake {move} from {game.heap(heap_idx)} (#{heap_idx})")
+                self.print(f"{indent}  ┌─ take {move} from #{heap_idx} ({game.heap(heap_idx)})")
 
-                sub_outcome = self._mem_outcome(game_result, indent+"\t\t")
+                sub_outcome = self._mem_outcome(game_result, indent+"  │  ")
                 outcomes.append(sub_outcome)
                 
-                print(f"{indent}\t-> next player outcome {outcome_to_str(sub_outcome)}")
+                self.print(f"{indent}  └─> next player outcome {outcome_to_str(sub_outcome)}")
 
         game_outcome, game_value = self._outcome_from_outcomes(outcomes)
-        print(f"{indent}next player outcomes: {outcomes_to_str(outcomes)} -> {outcome_to_str(game_outcome)}, val {game_value}")
+        self.print(f"{indent}next player outcomes: {outcomes_to_str(outcomes)} -> this game outcome: {outcome_to_str(game_outcome)}, val {game_value:.2f}")
 
         return game_outcome, game_value
 
@@ -205,8 +261,14 @@ class PlayerMove:
     heap_idx: int
     take: int
 
+    def __str__(self):
+        return f"heap #{self.heap_idx + 1} take {self.take}"
+
 class Player:
     """Jugador de min nim"""
+    def __init__(self, name: str):
+        self.name = name
+
     def choose_move(self, game: Game) -> PlayerMove:
         raise NotImplementedError
 
@@ -223,33 +285,44 @@ class HumanPlayer(Player):
         )
 
 class OptimalComputerPlayer(Player):
-    def __init__(self):
-        self.simulator = Simulator(outcomes={})
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.simulator = Simulator(outcomes={}, debug=False)
 
     def choose_move(self, game: Game) -> PlayerMove:
+        # Si tengo un outcome para el juego, es porque ya precalculé todo su
+        # árbol. Sino, lo precalculo. No se puede hacer en init porque todavía
+        # no se sabe qué juego se juega.
         if self.simulator._find_outcome(game) is None:
             self.simulator._mem_outcome(game)
-    
+
         # (value, move)
         values: List[Tuple[float, PlayerMove]] = []
 
+        print(f"Calculando mejor movimiento para\n{game.position}")
+        print("Opciones:")
         for heap_idx in game.positions():
             for move in game.legal_moves(heap_idx):
                 game_result = game.move(heap_idx, move)
                 val = self.simulator.find_value(game_result)
 
-                values.append((val, PlayerMove(heap_idx=heap_idx, take=move)))
+                move = PlayerMove(heap_idx=heap_idx, take=move)
+                values.append((val, move))
 
-        # return argmin values
-        return min(values, key=lambda t: t[0])[1]
+                print(f"{move} -> {game_result.position} ({val:.2f})")
+
+        # Argmin
+        move_to_min_value = min(values, key=lambda t: t[0])[1]
+
+        return move_to_min_value
 
 def play_interactive_game(
     playerL: Player,
     playerR: Player,
     game: Game,
 ):
-    playerL: Tuple[str, Player] = ("L", playerL)
-    playerR: Tuple[str, Player] = ("R", playerR)
+    playerL: Tuple[str, Player] = (f"L ({playerL.name})", playerL)
+    playerR: Tuple[str, Player] = (f"R ({playerR.name})", playerR)
 
     player = playerL
     next_player = playerR
@@ -260,8 +333,8 @@ def play_interactive_game(
         while not game.is_legal_move(move.heap_idx, move.take):
             print("Movimiento ilegal, elegí de vuelta")
             move = player[1].choose_move(game)
-        
-        print("Movimiento elegido")
+
+        print(f"Movimiento elegido {move}")
 
         game = game.move(move.heap_idx, move.take)
 
@@ -269,17 +342,6 @@ def play_interactive_game(
         print("-" * 20)
     
     print(f"Gana {next_player[0]}!")
-
-def parse_args(args: List[str]) -> Tuple[int, int, int, int, int, int]:
-    if not (len(args) == 7):
-        print("usage\n\t main.py n1 n2 n3 r1 r2 r3")
-        exit(1)
-
-    args = map(int, args[1:])
-    
-    n1, n2, n3, r1, r2, r3 = args
-    return n1, n2, n3, r1, r2, r3
-
 
 if __name__ == "__main__":
     main(sys.argv)

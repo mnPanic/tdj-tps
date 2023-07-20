@@ -55,3 +55,17 @@ P
   N 1
 
 valor de N = la proporción de jugadas ganadoras
+
+juego 1 0 2 no se puede separar
+
+se puede evaluar haciéndolo jugar contra random, tomando N posiciones para
+arrancar y viendo cuanto le gana en promedio. No los podes hacer jugar entre si
+para compararlos.
+
+juegos para jugar:
+
+2 3 5 1 2 3 es P
+
+11 15 20 3 5 9 es P
+
+otra: distribucion de n vs p iterando hasta 100 todas las posibilidades
